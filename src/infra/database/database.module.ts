@@ -1,7 +1,10 @@
 import { DatabaseType } from "@config/env.config";
+import { ClsPluginTransactional } from "@nestjs-cls/transactional";
+import { TransactionalAdapterTypeOrm } from "@nestjs-cls/transactional-adapter-typeorm";
 import { Global, Module, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { getDataSourceToken, TypeOrmModule } from "@nestjs/typeorm";
+import { ClsModule } from "nestjs-cls";
 import { SqlMapper } from "./mapper/sql-mapper";
 import { SqlStore } from "./mapper/sql-store";
 
@@ -22,6 +25,16 @@ import { SqlStore } from "./mapper/sql-store";
                 synchronize: false,
                 migrationsRun: false,
             }),
+        }),
+        ClsModule.forRoot({
+            plugins: [
+                new ClsPluginTransactional({
+                    imports: [TypeOrmModule],
+                    adapter: new TransactionalAdapterTypeOrm({
+                        dataSourceToken: getDataSourceToken(),
+                    }),
+                }),
+            ],
         }),
     ],
     providers: [SqlStore, SqlMapper],
