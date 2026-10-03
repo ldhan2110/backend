@@ -1,10 +1,15 @@
-import { DatabaseType } from "./database.config";
-
 export enum NodeEnv {
   DEVELOPMENT = 'DEVELOPMENT',
   TEST = 'TEST',
   PRODUCTION = 'PRODUCTION',
 }
+
+export enum DatabaseType {
+  POSTGRES="postgres",
+  ORACLE="oracle",
+  MSSQL="mssql",
+}
+
     
 export const configEnv = () => ({
   port: parseInt(process.env.PORT || '3000'),
