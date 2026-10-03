@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
+import { TransactionHost } from '@nestjs-cls/transactional';
+import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { plainToInstance } from 'class-transformer';
-import { DataSource } from 'typeorm';
 import { PaginationDto } from '@common/dtos/pagination.dto';
 import { bind } from './bind-params';
 import { DynamicSql } from './dynamic-sql';
@@ -13,7 +14,7 @@ type Sql = string | DynamicSql;
 @Injectable()
 export class SqlMapper {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly txHost: TransactionHost<TransactionalAdapterTypeOrm>,
     private readonly store: SqlStore,
   ) {}
 
@@ -31,7 +32,7 @@ export class SqlMapper {
 
   private query(text: string, params: Record<string, unknown>): Promise<Record<string, unknown>[]> {
     const { text: bound, values } = bind(text, params);
-    return this.dataSource.query(bound, values);
+    return this.txHost.tx.query(bound, values);
   }
 
   async selectOne<T>(target: ClassConstructor<T>, sql: Sql, params?: object): Promise<T | null> {
@@ -95,13 +96,16 @@ export class SqlMapper {
   private async affected(sql: Sql, params?: object): Promise<number> {
     const { text, params: p } = this.resolve(sql, params);
     const { text: bound, values } = bind(text, p);
-    // Structured result (with affected count) is exposed on QueryRunner, not DataSource.query.
-    const runner = this.dataSource.createQueryRunner();
+    // Structured result (affected count) is exposed on QueryRunner, not EntityManager.query.
+    // In a tx, reuse the tx's runner so the write participates and commits with it.
+    const txRunner = this.txHost.tx.queryRunner;
+    const runner = txRunner ?? this.txHost.tx.connection.createQueryRunner();
+    const owns = !txRunner;
     try {
       const result = await runner.query(bound, values, true);
       return Number(result?.affected ?? 0);
     } finally {
-      await runner.release();
+      if (owns) await runner.release(); // never release the tx's own runner
     }
   }
 }

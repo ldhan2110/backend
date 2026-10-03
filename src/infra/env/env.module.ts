@@ -1,4 +1,4 @@
-import { DatabaseType } from "@config/database.config";
+import { DatabaseType } from "@config/env.config";
 import { configEnv, NodeEnv } from "@config/env.config";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
