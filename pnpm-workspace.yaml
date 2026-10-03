@@ -1,3 +1,4 @@
 allowBuilds:
   '@parcel/watcher': true
+  '@scarf/scarf': set this to true or false
   unrs-resolver: true
