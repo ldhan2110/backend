@@ -1,8 +1,11 @@
 import { DatabaseType } from "@config/env.config";
-import { Module } from "@nestjs/common";
+import { Global, Module, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { SqlMapper } from "./mapper/sql-mapper";
+import { SqlStore } from "./mapper/sql-store";
 
+@Global()
 @Module({
     imports: [
         TypeOrmModule.forRootAsync({
@@ -21,5 +24,13 @@ import { TypeOrmModule } from "@nestjs/typeorm";
             }),
         }),
     ],
+    providers: [SqlStore, SqlMapper],
+    exports: [SqlMapper],
 })
-export class DatabaseModule {}
+export class DatabaseModule implements OnModuleInit {
+    constructor(private readonly store: SqlStore) {}
+
+    onModuleInit(): void {
+        this.store.load(process.cwd());
+    }
+}
