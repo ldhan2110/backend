@@ -1,5 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { Transactional } from '@nestjs-cls/transactional';
 import { UserQueryRequestDto } from '../dtos/user.request.dto';
+import { UserNotFoundException } from '../exceptions/user.exception';
 import { UserRepository } from '../repository/user.repository';
 
 @Injectable()
@@ -12,7 +14,7 @@ export class UserService {
 
   async getOne(userId: string) {
     const user = await this.users.findById(userId);
-    if (!user) throw new NotFoundException(`User ${userId} not found`);
+    if (!user) throw new UserNotFoundException(userId);
     return user;
   }
 
@@ -20,6 +22,7 @@ export class UserService {
     return this.users.countByActive();
   }
 
+  @Transactional()
   remove(userId: string) {
     return this.users.remove(userId);
   }

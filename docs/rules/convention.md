@@ -12,6 +12,11 @@ Schema changes: [`migration.md`](migration.md).
 - File names: `<name>.module.ts`, `<name>.controller.ts`, `<name>.service.ts`,
   `<name>.repository.ts`, `<name>.sql`, `<name>.request.dto.ts`,
   `<name>.response.dto.ts`. Folder layout: see the playbook.
+- DTO **class** names carry their direction as a suffix: inbound end
+  `RequestDto`, outbound end `ResponseDto` (e.g. `LoginRequestDto`,
+  `UserInfoResponseDto`). No bare `...Dto`.
+- Every DTO class lives in the module's `dtos/` folder — never declared inside a
+  `.repository.ts`, `.service.ts`, or `.controller.ts` file.
 
 ## Data access — SqlMapper only
 
@@ -75,6 +80,9 @@ async create(input: CreateUserDto, by: string): Promise<number> {
 - Request DTOs: validated with `class-validator`; no audit fields (clients never
   send `createdBy`/`updatedBy`).
 - Response DTOs: extend `BaseDto` (`@common/dtos/base.dto`).
+- Internal projections (a repo-only row shape never serialized to a client, e.g.
+  a credential lookup) live in `<name>.response.dto.ts` too, keep a plain `Dto`
+  suffix, and do not extend `BaseDto`.
 - Throw a `DomainException` subclass (`@common/exceptions`) for business-rule
   violations. Global filters emit a `problem+json` envelope; filter registration
   order in `main.ts` is load-bearing — don't reorder it.
