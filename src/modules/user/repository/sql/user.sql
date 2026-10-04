@@ -1,18 +1,12 @@
 -- name: base
-SELECT * FROM users;
+SELECT user_id, active_flag, created_at, created_by, updated_at, updated_by FROM users;
 
 -- name: findById
-SELECT * FROM users WHERE id = #{id};
+SELECT user_id, active_flag, created_at, created_by, updated_at, updated_by
+FROM users WHERE user_id = #{userId};
 
--- name: insert
-INSERT INTO users (email, status, created_by, updated_by)
-VALUES (#{email}, #{status}, #{by}, #{by});
-
--- name: updateEmail
-UPDATE users SET email = #{email}, updated_by = #{by} WHERE id = #{id};
-
--- name: countByStatus
-SELECT status, count(*)::int AS total FROM users GROUP BY status;
+-- name: countByActive
+SELECT active_flag, count(*)::int AS total FROM users GROUP BY active_flag;
 
 -- name: remove
-DELETE FROM users WHERE id = #{id};
+DELETE FROM users WHERE user_id = #{userId};

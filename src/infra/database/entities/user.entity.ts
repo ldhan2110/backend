@@ -1,14 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryColumn } from 'typeorm';
 import { BaseEntity } from './base.entity';
 
 @Entity('users')
 export class User extends BaseEntity {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryColumn({ name: 'user_id', type: 'varchar', length: 20 })
+  userId: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
-  email: string;
+  @Column({ name: 'password_hash', type: 'varchar', length: 255 })
+  passwordHash: string;
 
-  @Column({ type: 'varchar', length: 20, default: 'ACTIVE' })
-  status: string;
+  @Column({ name: 'active_flag', type: 'char', length: 1, default: 'Y' })
+  activeFlag: string;
 }

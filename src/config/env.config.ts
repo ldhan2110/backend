@@ -25,4 +25,13 @@ export const configEnv = () => ({
     level: process.env.LOG_LEVEL || 'info',
     db: process.env.DB_LOGGING === 'true',
   },
+  jwt: {
+    accessSecret: process.env.JWT_ACCESS_SECRET,
+    refreshSecret: process.env.JWT_REFRESH_SECRET,
+    accessTtl: process.env.JWT_ACCESS_TTL || '15m',
+    refreshTtl: process.env.JWT_REFRESH_TTL || '7d',
+  },
+  redis: {
+    url: process.env.REDIS_URL, // unset → in-memory refresh-token store
+  },
 });

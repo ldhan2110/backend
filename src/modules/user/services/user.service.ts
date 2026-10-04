@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateUserDto, UserQueryDto } from '../dtos/user.request.dto';
+import { UserQueryDto } from '../dtos/user.request.dto';
 import { UserRepository } from '../repository/user.repository';
 
 @Injectable()
@@ -10,25 +10,17 @@ export class UserService {
     return this.users.search(query);
   }
 
-  async getOne(id: number) {
-    const user = await this.users.findById(id);
-    if (!user) throw new NotFoundException(`User ${id} not found`);
+  async getOne(userId: string) {
+    const user = await this.users.findById(userId);
+    if (!user) throw new NotFoundException(`User ${userId} not found`);
     return user;
   }
 
   stats() {
-    return this.users.countByStatus();
+    return this.users.countByActive();
   }
 
-  create(input: CreateUserDto, by: string) {
-    return this.users.create(input, by);
-  }
-
-  changeEmail(id: number, email: string, by: string) {
-    return this.users.updateEmail(id, email, by);
-  }
-
-  remove(id: number) {
-    return this.users.remove(id);
+  remove(userId: string) {
+    return this.users.remove(userId);
   }
 }

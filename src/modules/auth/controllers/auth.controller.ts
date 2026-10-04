@@ -1,0 +1,70 @@
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
+import type { Request, Response, CookieOptions } from 'express';
+import { AuthService } from '../services/auth.service';
+import type { Issued } from '../services/auth.service';
+import { Public, CurrentUser } from '@infra/security';
+import type { AccessPayload } from '@infra/security';
+import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
+import { LoginResponseDto, UserInfoDto } from '../dtos/auth.response.dto';
+
+export const REFRESH_COOKIE = 'refresh_token';
+
+function cookieOptions(maxAgeMs: number): CookieOptions {
+  return { httpOnly: true, secure: true, sameSite: 'strict', path: '/auth/refresh', maxAge: maxAgeMs };
+}
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly service: AuthService) {}
+
+  @Public()
+  @Post('register')
+  async register(@Body() dto: RegisterRequestDto, @Res({ passthrough: true }) res: Response): Promise<LoginResponseDto> {
+    return this.respond(await this.service.register(dto), res);
+  }
+
+  @Public()
+  @Post('login')
+  async login(@Body() dto: LoginRequestDto, @Res({ passthrough: true }) res: Response): Promise<LoginResponseDto> {
+    return this.respond(await this.service.login(dto), res);
+  }
+
+  @Public()
+  @Post('refresh')
+  async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<LoginResponseDto> {
+    const raw = req.cookies?.[REFRESH_COOKIE];
+    if (!raw) throw new UnauthorizedException('Missing refresh token');
+    return this.respond(await this.service.refresh(raw), res);
+  }
+
+  @Post('logout')
+  @HttpCode(204)
+  async logout(@CurrentUser() user: AccessPayload, @Res({ passthrough: true }) res: Response): Promise<void> {
+    // The access token carries the refresh jti, so logout revokes this exact session.
+    await this.service.logout(user.sub, user.jti);
+    res.clearCookie(REFRESH_COOKIE, { path: '/auth/refresh' });
+  }
+
+  @Get('me')
+  me(@CurrentUser() user: AccessPayload): Promise<UserInfoDto> {
+    return this.service.me(user.sub);
+  }
+
+  private respond(issued: Issued, res: Response): LoginResponseDto {
+    // Refresh token stays server-side in the httpOnly cookie; only the access token is in the body.
+    res.cookie(REFRESH_COOKIE, issued.refresh.token, cookieOptions(issued.refresh.ttlSec * 1000));
+    return {
+      accessToken: issued.accessToken,
+      accessTokenExpiresAt: issued.accessTokenExpiresAt,
+    };
+  }
+}

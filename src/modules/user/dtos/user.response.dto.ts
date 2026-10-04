@@ -1,14 +1,11 @@
 import { BaseDto } from '@common/dtos/base.dto';
 
-
 export class UserDto extends BaseDto {
-  id: number;
-  email: string;
-  status: string;
+  userId: string;
+  activeFlag: string;
 }
 
-
-export class StatusCountDto {
-  status: string;
+export class ActiveCountDto {
+  activeFlag: string;
   total: number;
 }

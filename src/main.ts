@@ -5,6 +5,7 @@ import { DomainExceptionFilter } from './common/filters/domain-exception.filter'
 import { RuntimeExceptionFilter } from './common/filters/runtime-exception.filter';
 import { ValidationPipe } from '@nestjs/common/pipes/index.js';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -12,9 +13,17 @@ async function bootstrap() {
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
-  // CORS — "*" allows all, else comma-separated allowlist
+  // Parse cookies (refresh token travels in an httpOnly cookie)
+  app.use(cookieParser());
+
+  // CORS — wildcard can't carry credentials (CORS spec), so cookie auth across
+  // origins needs an explicit CORS_ORIGIN allowlist. Wildcard stays dev-usable.
   const corsOrigin = process.env.CORS_ORIGIN ?? '*';
-  app.enableCors({ origin: corsOrigin === '*' ? true : corsOrigin.split(',').map((o) => o.trim())});
+  if (corsOrigin === '*') {
+    app.enableCors({ origin: true });
+  } else {
+    app.enableCors({ origin: corsOrigin.split(',').map((o) => o.trim()), credentials: true });
+  }
 
   // Global filters
   app.useGlobalFilters(new RuntimeExceptionFilter(), new DomainExceptionFilter());

@@ -3,7 +3,7 @@ import { configEnv, NodeEnv } from "@config/env.config";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { plainToInstance } from "class-transformer";
-import { IsEnum, IsInt, IsString, Max, Min, validateSync } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min, MinLength, validateSync } from "class-validator";
 
 
 
@@ -38,6 +38,24 @@ export class EnvironmentVariables {
   @Min(1)
   @Max(65535)
   DB_PORT: number = 5432;
+
+  @IsString()
+  @MinLength(16)
+  JWT_ACCESS_SECRET: string;
+
+  @IsString()
+  @MinLength(16)
+  JWT_REFRESH_SECRET: string;
+
+  @IsString()
+  JWT_ACCESS_TTL: string = '15m';
+
+  @IsString()
+  JWT_REFRESH_TTL: string = '7d';
+
+  @IsString()
+  @IsOptional()
+  REDIS_URL?: string;
 }
     
 @Module({
