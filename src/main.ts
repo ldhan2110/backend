@@ -6,8 +6,11 @@ import { RuntimeExceptionFilter } from './common/filters/runtime-exception.filte
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Global filters
   app.useGlobalFilters(new RuntimeExceptionFilter(), new DomainExceptionFilter());
 
+  // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('API')
     .setVersion('1.0')
