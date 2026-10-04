@@ -16,6 +16,9 @@ export class EnvironmentVariables {
   @Max(65535)
   PORT: number = 3000;
 
+  @IsString()
+  CORS_ORIGIN: string = '*';
+
   @IsEnum(DatabaseType)
   DB_TYPE: DatabaseType = DatabaseType.POSTGRES;
 
