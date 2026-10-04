@@ -1,22 +1,32 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TransactionHost } from '@nestjs-cls/transactional';
 import { TransactionalAdapterTypeOrm } from '@nestjs-cls/transactional-adapter-typeorm';
 import { plainToInstance } from 'class-transformer';
+import type { Logger as WinstonLogger } from 'winston';
 import { PaginationDto } from '@common/dtos/pagination.dto';
-import { bind } from './bind-params';
-import { DynamicSql } from './dynamic-sql';
+import { DB_LOGGER } from '@infra/logger/logger.module';
+import { callerService } from '@infra/logger/utils/caller';
+import { bind } from './utils/bind-params';
+import { DynamicSql } from './utils/dynamic-sql';
 import { SqlStore } from './sql-store';
-import { rowToCamel } from './to-camel';
-import { ClassConstructor, Paginated } from './sql-mapper.types';
+import { rowToCamel } from './utils/to-camel';
+import { ClassConstructor, Paginated } from './types/sql-mapper.types';
 
 type Sql = string | DynamicSql;
 
 @Injectable()
 export class SqlMapper {
+  private readonly dbLog: boolean;
+
   constructor(
     private readonly txHost: TransactionHost<TransactionalAdapterTypeOrm>,
     private readonly store: SqlStore,
-  ) {}
+    config: ConfigService,
+    @Inject(DB_LOGGER) private readonly dbLogger: WinstonLogger,
+  ) {
+    this.dbLog = config.get<boolean>('logging.db', false);
+  }
 
   named(id: string): DynamicSql {
     return DynamicSql.of(this.store.get(id));
@@ -30,9 +40,21 @@ export class SqlMapper {
     return { text: built.sql, params: { ...built.params, ...(params ?? {}) } };
   }
 
-  private query(text: string, params: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+  private async query(
+    text: string,
+    params: Record<string, unknown>,
+  ): Promise<Record<string, unknown>[]> {
     const { text: bound, values } = bind(text, params);
-    return this.txHost.tx.query(bound, values);
+    if (!this.dbLog) return this.txHost.tx.query(bound, values);
+    const caller = callerService();
+    const t0 = performance.now();
+    const rows = await this.txHost.tx.query(bound, values);
+    const ms = (performance.now() - t0).toFixed(1);
+    this.dbLogger.debug({
+      context: caller,
+      message: `${bound} -- params: ${JSON.stringify(values)} (${ms}ms)`,
+    });
+    return rows;
   }
 
   async selectOne<T>(target: ClassConstructor<T>, sql: Sql, params?: object): Promise<T | null> {
@@ -102,7 +124,18 @@ export class SqlMapper {
     const runner = txRunner ?? this.txHost.tx.connection.createQueryRunner();
     const owns = !txRunner;
     try {
+      if (!this.dbLog) {
+        const result = await runner.query(bound, values, true);
+        return Number(result?.affected ?? 0);
+      }
+      const caller = callerService();
+      const t0 = performance.now();
       const result = await runner.query(bound, values, true);
+      const ms = (performance.now() - t0).toFixed(1);
+      this.dbLogger.debug({
+        context: caller,
+        message: `${bound} -- params: ${JSON.stringify(values)} (${ms}ms)`,
+      });
       return Number(result?.affected ?? 0);
     } finally {
       if (owns) await runner.release(); // never release the tx's own runner

@@ -21,4 +21,8 @@ export const configEnv = () => ({
     password: process.env.DB_PASSWORD,
     name: process.env.DB_NAME,
   },
+  logging: {
+    level: process.env.LOG_LEVEL || 'info',
+    db: process.env.DB_LOGGING === 'true',
+  },
 });

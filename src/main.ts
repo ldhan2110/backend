@@ -4,9 +4,13 @@ import { AppModule } from './app.module';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
 import { RuntimeExceptionFilter } from './common/filters/runtime-exception.filter';
 import { ValidationPipe } from '@nestjs/common/pipes/index.js';
+import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Use Winston logger
+  app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
   // CORS — "*" allows all, else comma-separated allowlist
   const corsOrigin = process.env.CORS_ORIGIN ?? '*';
