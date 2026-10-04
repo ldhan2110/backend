@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserQueryDto } from '../dtos/user.request.dto';
+import { UserQueryRequestDto } from '../dtos/user.request.dto';
 import { UserRepository } from '../repository/user.repository';
 
 @Injectable()
 export class UserService {
   constructor(private readonly users: UserRepository) {}
 
-  list(query: UserQueryDto) {
+  list(query: UserQueryRequestDto) {
     return this.users.search(query);
   }
 

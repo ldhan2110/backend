@@ -4,7 +4,7 @@ import { AuthRepository } from '../repository/auth.repository';
 import { TokenService, DUMMY_BCRYPT_HASH, REFRESH_TOKEN_STORE } from '@infra/security';
 import type { IssuedRefresh, RefreshTokenStore } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
-import { UserInfoDto } from '../dtos/auth.response.dto';
+import { UserInfoResponseDto } from '../dtos/auth.response.dto';
 import {
   InvalidCredentialsException,
   UserAlreadyExistsException,
@@ -37,7 +37,6 @@ export class AuthService {
   async login(dto: LoginRequestDto): Promise<Issued> {
     const cred = await this.repo.findCredential(dto.userId);
     if (!cred) {
-      // Run a dummy compare so unknown users cost the same time as wrong passwords (no enumeration).
       await this.tokens.verifyPassword(dto.password, DUMMY_BCRYPT_HASH);
       throw new InvalidCredentialsException();
     }
@@ -65,7 +64,7 @@ export class AuthService {
     await this.store.del(userId, jti);
   }
 
-  async me(userId: string): Promise<UserInfoDto> {
+  async me(userId: string): Promise<UserInfoResponseDto> {
     const profile = await this.repo.findProfile(userId);
     if (!profile) throw new UnauthorizedException();
     return profile;

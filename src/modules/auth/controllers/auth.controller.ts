@@ -14,7 +14,7 @@ import type { Issued } from '../services/auth.service';
 import { Public, CurrentUser } from '@infra/security';
 import type { AccessPayload } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
-import { LoginResponseDto, UserInfoDto } from '../dtos/auth.response.dto';
+import { LoginResponseDto, UserInfoResponseDto } from '../dtos/auth.response.dto';
 
 export const REFRESH_COOKIE = 'refresh_token';
 
@@ -55,7 +55,7 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@CurrentUser() user: AccessPayload): Promise<UserInfoDto> {
+  me(@CurrentUser() user: AccessPayload): Promise<UserInfoResponseDto> {
     return this.service.me(user.sub);
   }
 

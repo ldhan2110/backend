@@ -1,11 +1,11 @@
 import { BaseDto } from '@common/dtos/base.dto';
 
-export class UserDto extends BaseDto {
+export class UserResponseDto extends BaseDto {
   userId: string;
   activeFlag: string;
 }
 
-export class ActiveCountDto {
+export class ActiveCountResponseDto {
   activeFlag: string;
   total: number;
 }

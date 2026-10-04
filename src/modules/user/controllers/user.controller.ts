@@ -1,5 +1,5 @@
 import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
-import { UserQueryDto } from '../dtos/user.request.dto';
+import { UserQueryRequestDto } from '../dtos/user.request.dto';
 import { UserService } from '../services/user.service';
 
 @Controller('users')
@@ -7,7 +7,7 @@ export class UserController {
   constructor(private readonly service: UserService) {}
 
   @Get()
-  list(@Query() query: UserQueryDto) {
+  list(@Query() query: UserQueryRequestDto) {
     return this.service.list(query);
   }
 

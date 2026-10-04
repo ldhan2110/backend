@@ -1,13 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { SqlMapper } from '@infra/database/mapper';
-import { UserInfoDto } from '../dtos/auth.response.dto';
-
-/** Internal credential projection — not a response DTO (never serialized to a client). */
-export class CredentialDto {
-  userId: string;
-  passwordHash: string;
-  activeFlag: string;
-}
+import { UserInfoResponseDto, CredentialDto } from '../dtos/auth.response.dto';
 
 @Injectable()
 export class AuthRepository {
@@ -26,7 +19,7 @@ export class AuthRepository {
     return this.mapper.insert(this.mapper.named('auth.insert'), { userId, passwordHash, by });
   }
 
-  findProfile(userId: string): Promise<UserInfoDto | null> {
-    return this.mapper.selectOne(UserInfoDto, this.mapper.named('auth.findProfile'), { userId });
+  findProfile(userId: string): Promise<UserInfoResponseDto | null> {
+    return this.mapper.selectOne(UserInfoResponseDto, this.mapper.named('auth.findProfile'), { userId });
   }
 }

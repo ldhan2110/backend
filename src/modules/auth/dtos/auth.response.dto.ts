@@ -6,7 +6,14 @@ export class LoginResponseDto {
   accessTokenExpiresAt: number;
 }
 
-export class UserInfoDto extends BaseDto {
+export class UserInfoResponseDto extends BaseDto {
   userId: string;
   activeFlag: string;
 }
+
+export class CredentialDto {
+  userId: string;
+  passwordHash: string;
+  activeFlag: string;
+}
+

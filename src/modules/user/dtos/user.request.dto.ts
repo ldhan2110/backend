@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 import { IsOptional, IsString, ValidateNested } from 'class-validator';
 
 /** Filters + nested sort + nested pagination for the user list endpoint. */
-export class UserQueryDto {
+export class UserQueryRequestDto {
   @IsString()
   @IsOptional()
   activeFlag?: string;
