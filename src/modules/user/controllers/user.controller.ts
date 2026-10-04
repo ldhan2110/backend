@@ -16,10 +16,9 @@ import { UserService } from '../services/user.service';
 export class UserController {
   constructor(private readonly service: UserService) {}
 
-  // GET /users?status=ACTIVE&keyword=al&sortBy=email&order=ASC&page=2&limit=20
   @Get()
   list(@Query() query: UserQueryDto) {
-    return this.service.list(query); // { data: UserDto[], meta: {...} }
+    return this.service.list(query);
   }
 
   @Get('stats')

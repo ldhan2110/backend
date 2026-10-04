@@ -1,124 +1,274 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS 12 + TypeORM + PostgreSQL boilerplate with a lightweight, MyBatis-style
+SQL mapper. This README is the developer onboarding guide: get running in
+minutes, then understand how the pieces fit.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 1. Quick start
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
+Prerequisites: **Node >= 20.12** (uses native `process.loadEnvFile`), **pnpm**,
+and a reachable **PostgreSQL** instance.
 
 ```bash
-$ pnpm install
+# 1. install deps
+pnpm install
+
+# 2. create your env file from the template
+cp .env.example .env
+#    then edit .env with your DB credentials
+
+# 3. run migrations (schema is NOT auto-synced — see §6)
+pnpm migration:run
+
+# 4. start in watch mode
+pnpm run start:dev
 ```
 
-## Compile and run the project
+App listens on `PORT` (default `3000`). Swagger UI is served at
+**`http://localhost:<PORT>/docs`**.
+
+> The app **fails fast on boot** if any required env var is missing or invalid
+> (see `src/infra/env/env.module.ts`). A validation error prints the offending
+> fields and exits with code 1 — that is expected behaviour, not a crash.
+
+### Environment variables
+
+| Var           | Required | Default       | Notes                                   |
+| ------------- | -------- | ------------- | --------------------------------------- |
+| `NODE_ENV`    | no       | `DEVELOPMENT` | `DEVELOPMENT` \| `TEST` \| `PRODUCTION` |
+| `PORT`        | no       | `3000`        | 1–65535                                 |
+| `DB_TYPE`     | no       | `postgres`    | `postgres` \| `oracle` \| `mssql`       |
+| `DB_HOST`     | **yes**  | —             |                                         |
+| `DB_PORT`     | no       | `5432`        |                                         |
+| `DB_USERNAME` | **yes**  | —             |                                         |
+| `DB_PASSWORD` | **yes**  | —             |                                         |
+| `DB_NAME`     | **yes**  | —             |                                         |
+
+`.env*` files are loaded in this order (later wins):
+`.env`, `.env.development`, `.env.test`, `.env.production`.
+
+---
+
+## 2. Scripts
 
 ```bash
-# development
-$ pnpm run start
+pnpm run start:dev     # watch mode
+pnpm run start:prod    # run compiled dist/ (build first)
+pnpm run build         # nest build + tsc-alias (resolves path aliases)
+pnpm run lint          # oxlint, type-aware
+pnpm run format        # prettier
+pnpm run test          # unit tests (jest, ESM)
+pnpm run test:e2e      # e2e tests
+pnpm run test:cov      # coverage
 
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+# migrations (TypeORM CLI, see §6)
+pnpm migration:generate src/infra/database/migrations/<Name>
+pnpm migration:create   src/infra/database/migrations/<Name>
+pnpm migration:run
+pnpm migration:revert
+pnpm migration:show
 ```
 
-## Run tests
+---
+
+## 3. Architecture at a glance
+
+Standard layered flow, one directory per concern:
+
+```
+HTTP → Controller → Service → Repository → SqlMapper → PostgreSQL
+         (DTO)      (rules)   (named SQL)   (bind +     
+                                            camelCase)  
+```
+
+```
+src/
+├─ main.ts                     # bootstrap: global filters + Swagger
+├─ app.module.ts               # root: imports InfraModule + feature modules
+│
+├─ config/
+│  └─ env.config.ts            # typed config factory + NodeEnv/DatabaseType enums
+│
+├─ infra/                      # cross-cutting infrastructure
+│  ├─ infra.module.ts          # groups Env + Database
+│  ├─ env/env.module.ts        # ConfigModule + class-validator env validation
+│  └─ database/
+│     ├─ database.module.ts    # @Global: TypeORM + CLS transactions + SqlMapper
+│     ├─ entities/             # TypeORM entities (migrations only, see §6)
+│     ├─ migrations/           # generated migration files
+│     └─ mapper/               # ★ the custom SQL mapper (see §5)
+│
+├─ common/                     # shared, feature-agnostic building blocks
+│  ├─ dtos/                    # BaseDto (audit), Pagination, Sort, Success
+│  ├─ exceptions/              # DomainException base + AppException envelope
+│  └─ filters/                 # Domain + Runtime exception filters
+│
+└─ modules/                    # feature modules (one folder each)
+   └─ user/                    # ★ reference implementation — copy this shape
+      ├─ user.module.ts
+      ├─ controllers/
+      ├─ services/
+      ├─ dtos/                 # *.request.dto.ts / *.response.dto.ts
+      └─ repository/
+         ├─ user.repository.ts
+         └─ sql/user.sql       # named SQL, colocated with the module
+```
+
+**Path aliases** (`tsconfig.json`): `@infra/*`, `@config/*`, `@common/*`,
+`@modules/*`. Always import through these, not relative `../../..` paths.
+
+---
+
+## 4. The `user` module — your template
+
+To add a feature, copy `src/modules/user/` and rename. The layering:
+
+- **Controller** (`controllers/user.controller.ts`) — routes only. Binds
+  `@Query`/`@Body`/`@Param`, delegates to the service. No logic.
+- **Service** (`services/user.service.ts`) — business rules, throws domain
+  errors (`NotFoundException`, etc.).
+- **Repository** (`repository/user.repository.ts`) — data access via
+  `SqlMapper`. Holds the `SORTABLE` allow-list for safe sorting.
+- **SQL** (`repository/sql/user.sql`) — named queries, loaded at boot.
+- **DTOs** (`dtos/`) — split by direction:
+  - `user.request.dto.ts` — inbound, validated with `class-validator`.
+    Create/update DTOs **do not** carry audit fields (clients never send them).
+    List DTOs compose nested `SortDto` + `PaginationDto`.
+  - `user.response.dto.ts` — outbound. Response rows extend `BaseDto`
+    (audit columns) and are the mapping target for the SQL mapper.
+
+Remember to register the new module in `app.module.ts`.
+
+---
+
+## 5. SQL mapper — the one thing to learn
+
+This project does **not** use the TypeORM repository/query-builder for reads and
+writes. Instead it uses a small MyBatis-style mapper: SQL lives in `.sql` files,
+referenced by name, with injection-safe bind placeholders.
+
+### Named queries
+
+SQL files are plain text with `-- name:` markers. At boot, `SqlStore` recursively
+scans the working directory for every `*.sql` file and registers each query as
+`<filename>.<name>`:
+
+```sql
+-- src/modules/user/repository/sql/user.sql
+-- name: findById
+SELECT * FROM users WHERE id = #{id};
+```
+
+→ referenced as `this.mapper.named('user.findById')`
+(filename `user.sql` → namespace `user`).
+
+### Bind parameters — always `#{name}`
+
+`#{name}` compiles to a numbered placeholder (`$1`, `$2`, …) and the value is
+passed separately to the driver — **safe against SQL injection**. String
+interpolation (`${}`) is intentionally rejected; never build SQL by concatenation.
+
+A missing param throws `Missing SQL param: <name>` at call time.
+
+### Mapper API (`@infra/database/mapper`)
+
+Inject `SqlMapper` into a repository. Results are auto-mapped from `snake_case`
+columns to `camelCase` fields of the target DTO class.
+
+| Method                                   | Returns          | Use for                        |
+| ---------------------------------------- | ---------------- | ------------------------------ |
+| `selectOne(Dto, sql, params)`            | `T \| null`      | single row                     |
+| `selectList(Dto, sql, params)`           | `T[]`            | many rows                      |
+| `selectPage(Dto, sql, pagination)`       | `Paginated<T>`   | paged list (`{ data, meta }`)  |
+| `execute(Dto, sql, params)`              | `T[]`            | arbitrary projection           |
+| `insert / update / delete(sql, params)`  | `number`         | writes → affected row count    |
+
+### Dynamic SQL
+
+For conditional filters and safe ordering, chain off `named(...)`:
+
+```ts
+const sql = this.mapper
+  .named('user.base')
+  .where([
+    when(query.status,  'status = #{status}', { status: query.status }),
+    when(query.keyword, 'email ILIKE #{kw}',  { kw: `%${query.keyword}%` }),
+  ])
+  .orderBy(query.sort, SORTABLE); // SORTABLE = column allow-list
+
+return this.mapper.selectPage(UserDto, sql, query.pagination);
+```
+
+- `when(cond, fragment, params)` — fragment is included only when `cond` is
+  truthy; the fragments are `AND`-joined.
+- `.orderBy(sort, allowed)` — only columns in the `allowed` list are honoured
+  (prevents sort-column injection); camelCase is mapped to snake_case.
+
+### Transactions
+
+Wrap a service method with `@Transactional()` from `@nestjs-cls/transactional`.
+It uses CLS (async context) under the hood — every `SqlMapper` call inside the
+method automatically joins the same transaction, no manual `QueryRunner` passing:
+
+```ts
+import { Transactional } from '@nestjs-cls/transactional';
+
+@Transactional()
+async transfer(...) {
+  await this.repo.debit(...);
+  await this.repo.credit(...); // same tx; both roll back on throw
+}
+```
+
+---
+
+## 6. Database & migrations
+
+- **`synchronize` is `false`** everywhere. The schema is managed **only** by
+  migrations — entities are never auto-applied to the DB.
+- **Entities** (`src/infra/database/entities/`) exist so TypeORM can
+  *generate* migrations and provide audit columns via `BaseEntity`
+  (`created_at/by`, `updated_at/by`). Runtime reads/writes go through the SQL
+  mapper, not the entities.
+- The TypeORM CLI uses its own `data-source.ts` (it can't read Nest's DI). It
+  loads env natively (`process.loadEnvFile`) — no `dotenv` dependency.
+
+Typical workflow after changing an entity:
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm migration:generate src/infra/database/migrations/AddFooColumn
+pnpm migration:run
 ```
 
-## Deployment
+---
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 7. Errors & responses
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- `main.ts` registers two global filters. **Order matters**:
+  `RuntimeExceptionFilter` (catch-all) is registered first, then
+  `DomainExceptionFilter`, so domain errors out-rank the catch-all.
+- Throw a subclass of `DomainException` (`@common/exceptions`) for business-rule
+  violations — it carries a stable `code`, `detail`, and HTTP `status`.
+- Both filters emit the same JSON envelope (`AppException`, an RFC 9457 subset)
+  with content type `application/problem+json`:
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+  ```json
+  { "code": "USER_NOT_FOUND", "detail": "User 42 not found", "status": 404 }
+  ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Observability
+## 8. Conventions checklist
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+When adding code, match the existing shape:
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-To add it to this project:
-
-```bash
-$ pnpm install @nestjs/observe
-```
-
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
-
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- [ ] Feature lives under `src/modules/<name>/` with controller/service/repository/dtos.
+- [ ] SQL in a colocated `repository/sql/<name>.sql`, referenced as `<name>.<query>`.
+- [ ] Bind values with `#{param}` — never interpolate.
+- [ ] Any client-controlled sort column goes through an allow-list.
+- [ ] Request DTOs validated with `class-validator`; response DTOs extend `BaseDto`.
+- [ ] Imports use `@infra`/`@config`/`@common`/`@modules` aliases.
+- [ ] New module registered in `app.module.ts`.
+- [ ] Schema changes ship as a migration (no `synchronize`).
