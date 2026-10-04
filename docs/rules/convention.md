@@ -40,6 +40,36 @@ Rows map `snake_case` columns → `camelCase` DTO fields automatically.
 Dynamic SQL: chain `.where([ when(cond, 'frag = #{x}', { x }) ])` and
 `.orderBy(sort, allowedColumns)` off `named(...)`.
 
+## Transactions
+
+Transactions are declarative via `@Transactional()` (`@nestjs-cls/transactional`).
+The mapper runs every query on the CLS-active transaction, so any mapper call
+inside a decorated method joins it automatically — no manual `QueryRunner`,
+`DataSource`, or `manager` wiring.
+
+- Wrap the **service** method that performs writes with `@Transactional()`.
+  Never the controller (opens no transaction) and never the repository (holds no
+  boundary).
+- Read-only methods take no decorator.
+- A write method that calls one mapper write still gets `@Transactional()` — the
+  boundary is per business operation, not per statement count.
+- One `@Transactional()` service method calling another joins the caller's
+  transaction by default (`REQUIRED`): a single boundary, committed or rolled
+  back as one unit.
+- Default propagation is `REQUIRED` (reuse or create). Pass a `Propagation` value
+  only when the semantics genuinely differ (e.g. `RequiresNew` for an
+  independent audit write that must survive the caller's rollback). Don't set
+  propagation speculatively.
+
+```ts
+import { Transactional } from '@nestjs-cls/transactional';
+
+@Transactional()
+async create(input: CreateUserDto, by: string): Promise<number> {
+  return this.users.create(input, by); // mapper write joins this transaction
+}
+```
+
 ## DTOs & errors
 
 - Request DTOs: validated with `class-validator`; no audit fields (clients never
@@ -57,7 +87,8 @@ Dynamic SQL: chain `.where([ when(cond, 'frag = #{x}', { x }) ])` and
 ## DON'T
 
 1. **Wrong data access** — no TypeORM repository/query-builder at runtime, no raw
-   string SQL, no `${}` interpolation (only `#{}`).
+   string SQL, no `${}` interpolation (only `#{}`), no manual transaction wiring
+   (`QueryRunner`/`DataSource`/`manager`) — use `@Transactional()` on the service.
 2. **Structural sprawl** — no umbrella folders (`utils/`/`helpers/`/`services/` at
    `src/` root), no files off the module shape, no skipping path aliases.
 3. **Over-engineering** — no speculative abstractions, no config for constants, no
