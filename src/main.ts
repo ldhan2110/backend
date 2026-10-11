@@ -7,6 +7,7 @@ import { RuntimeExceptionFilter } from './common/filters/runtime-exception.filte
 import { ValidationPipe } from '@nestjs/common/pipes/index.js';
 import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -14,15 +15,16 @@ async function bootstrap() {
   // Use Winston logger
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
+  // Security headers. CSP off — API-only (JSON), and default CSP breaks Swagger UI.
+  app.use(helmet({ contentSecurityPolicy: false }));
+
   // Parse cookies (refresh token travels in an httpOnly cookie)
   app.use(cookieParser());
 
   // URI versioning: routes mounted under /v1, /v2, ... defaultVersion handles
-  // controllers that omit an explicit version.
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
-  // CORS — wildcard can't carry credentials (CORS spec), so cookie auth across
-  // origins needs an explicit CORS_ORIGIN allowlist. Wildcard stays dev-usable.
+  // CORS — wildcard can't carry credentials (CORS spec)
   const corsOrigin = process.env.CORS_ORIGIN ?? '*';
   if (corsOrigin === '*') {
     app.enableCors({ origin: true });
