@@ -260,7 +260,35 @@ pnpm migration:run
 
 ---
 
-## 8. Conventions checklist
+## 8. Caching
+
+`CacheService` (`@infra/cache`) is the one cache API — `@Global`, so inject it
+anywhere. Redis when `REDIS_URL` is set, otherwise an in-process LRU for
+dev/test. It is **fail-open**: any backend error is logged and treated as a
+miss, so the cache can never break a request.
+
+```ts
+// read-through
+const user = await this.cache.getOrSet(`user:${id}`, 300_000, () => this.repo.findById(id));
+
+// or declaratively on a method
+@Cacheable({ ttl: 300_000 })
+async findById(id: string) { ... }
+```
+
+TTL is in **milliseconds**, optional (omit → `CACHE_DEFAULT_TTL`). Invalidate
+manually on writes (`cache.del(key)`).
+Full rules: [`docs/rules/caching.md`](docs/rules/caching.md).
+
+| Var | Default | Notes |
+| ----------------- | ------- | ----------------------------------------- |
+| `REDIS_URL`        | —       | unset → in-memory LRU (per-process)       |
+| `CACHE_MEMORY_MAX` | `1000`  | LRU max entries; ignored when Redis is on |
+| `CACHE_DEFAULT_TTL`| `60000` | fallback TTL (ms) when a write omits one  |
+
+---
+
+## 9. Conventions checklist
 
 When adding code, match the existing shape:
 

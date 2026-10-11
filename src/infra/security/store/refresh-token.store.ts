@@ -10,3 +10,8 @@ export interface RefreshTokenStore {
 export function refreshKey(userId: string, jti: string): string {
   return `refresh:${userId}:${jti}`;
 }
+
+// jti is a UUID, so it never collides with this sibling index key.
+export function refreshIndexKey(userId: string): string {
+  return `refresh:${userId}:index`;
+}

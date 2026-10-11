@@ -1,3 +1,4 @@
+import { configCache } from "@config/cache.config";
 import { DatabaseType,configEnv,NodeEnv } from "@config/env.config";
 import { configFile } from "@config/file.config";
 import { Module } from "@nestjs/common";
@@ -68,6 +69,16 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   UPLOAD_ALLOWED_MIME?: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  CACHE_MEMORY_MAX?: number;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  CACHE_DEFAULT_TTL?: number;
 }
     
 @Module({
@@ -77,7 +88,7 @@ export class EnvironmentVariables {
       expandVariables: true,
       envFilePath: ['.env', '.env.development', '.env.test', '.env.production'],
       cache: true,
-      load: [configEnv, configFile],
+      load: [configEnv, configFile, configCache],
       validate: (config: Record<string, unknown>) => {
             const validatedConfig = plainToInstance(EnvironmentVariables, config, {
                 enableImplicitConversion: true,

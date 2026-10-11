@@ -1,13 +1,10 @@
 import { Global, Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
-import Redis from 'ioredis';
 import { TokenService } from './services/token.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { REFRESH_TOKEN_STORE } from './store/refresh-token.store';
-import { MemoryRefreshTokenStore } from './store/memory-refresh-token.store';
-import { RedisRefreshTokenStore } from './store/redis-refresh-token.store';
+import { CacheRefreshTokenStore } from './store/cache-refresh-token.store';
 
 
 @Global()
@@ -16,14 +13,8 @@ import { RedisRefreshTokenStore } from './store/redis-refresh-token.store';
   providers: [
     TokenService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
-    {
-      provide: REFRESH_TOKEN_STORE,
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const url = config.get<string>('redis.url');
-        return url ? new RedisRefreshTokenStore(new Redis(url)) : new MemoryRefreshTokenStore();
-      },
-    },
+    // backend (Redis vs in-memory) is chosen by CacheModule, not here
+    { provide: REFRESH_TOKEN_STORE, useClass: CacheRefreshTokenStore },
   ],
   exports: [TokenService, REFRESH_TOKEN_STORE],
 })
