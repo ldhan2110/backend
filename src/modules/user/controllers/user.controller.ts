@@ -2,7 +2,7 @@ import { Controller, Delete, Get, Param, Query } from '@nestjs/common';
 import { UserQueryRequestDto } from '../dtos/user.request.dto';
 import { UserService } from '../services/user.service';
 
-@Controller('users')
+@Controller({ path: 'users', version: '1' })
 export class UserController {
   constructor(private readonly service: UserService) {}
 

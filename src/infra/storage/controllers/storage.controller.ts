@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import { DISPOSITION_ATTACHMENT } from '../constants/file.constants';
 import { StorageService } from '../services/storage.service';
 
-@Controller('files')
+@Controller({ path: 'files', version: '1' })
 export class StorageController {
   constructor(private readonly service: StorageService) {}
 

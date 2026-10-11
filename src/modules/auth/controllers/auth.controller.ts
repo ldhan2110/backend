@@ -21,7 +21,7 @@ function cookieOptions(maxAgeMs: number): CookieOptions {
   return { httpOnly: true, secure: true, sameSite: 'strict', path: '/auth/refresh', maxAge: maxAgeMs };
 }
 
-@Controller('auth')
+@Controller({ path: 'auth', version: '1' })
 export class AuthController {
   constructor(private readonly service: AuthService) {}
 

@@ -27,7 +27,8 @@ Work these steps in order. Track them as todos.
 
 Extract:
 - **Resource name** — singular (e.g. `product`). The route path is its plural,
-  declared in the controller (`@Controller('products')`).
+  declared in the controller with an explicit version
+  (`@Controller({ path: 'products', version: '1' })` → mounts at `/v1/products`).
 - **Guessed fields** — a first pass only.
 - **Guessed endpoints** — which of: list (paged), getById, create, update, delete.
 
@@ -117,6 +118,10 @@ Do not generate tests unless the user asks.
 - **Sort:** client-controlled sort columns pass through a `SORTABLE` allow-list.
 - **Errors:** throw a `DomainException` subclass (`@common/exceptions`) for
   business-rule violations.
+- **Versioning:** URI versioning is enabled globally (`main.ts`,
+  `defaultVersion: '1'`). Every controller declares an explicit version —
+  `@Controller({ path: '<plural>', version: '1' })` — so routes mount under
+  `/v1/*`. New resources start at `'1'`.
 - **Auth:** none. The boilerplate has no auth module — generate endpoints plain,
   no guards.
 - **Structure:** no umbrella folders, no files off the module shape, no

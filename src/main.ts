@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core';
+import { VersioningType } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { DomainExceptionFilter } from './common/filters/domain-exception.filter';
@@ -15,6 +16,10 @@ async function bootstrap() {
 
   // Parse cookies (refresh token travels in an httpOnly cookie)
   app.use(cookieParser());
+
+  // URI versioning: routes mounted under /v1, /v2, ... defaultVersion handles
+  // controllers that omit an explicit version.
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
 
   // CORS — wildcard can't carry credentials (CORS spec), so cookie auth across
   // origins needs an explicit CORS_ORIGIN allowlist. Wildcard stays dev-usable.

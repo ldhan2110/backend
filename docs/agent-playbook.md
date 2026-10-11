@@ -30,7 +30,9 @@ None fits → stop and clarify ownership. No umbrella folders (`utils/`,
 ## Feature module structure
 
 A feature module is exactly this shape. Lowercase `<name>` = singular resource
-(e.g. `user`); the plural is the route path, declared in the controller.
+(e.g. `user`); the plural is the route path, declared in the controller with an
+explicit version — `@Controller({ path: '<plural>', version: '1' })`, mounting
+at `/v1/<plural>` (URI versioning is enabled globally in `main.ts`).
 
 ```
 src/modules/<name>/
