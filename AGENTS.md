@@ -23,6 +23,7 @@ Then load **only** the rule docs the task touches — don't read them all:
 | DB design / table / entity / schema / migration | + [`docs/rules/migration.md`](docs/rules/migration.md) |
 | File upload / download endpoint | + [`docs/rules/file-upload.md`](docs/rules/file-upload.md) |
 | Cache a value / method result | + [`docs/rules/caching.md`](docs/rules/caching.md) |
+| Add / edit a controller or route, or set a request limit | + [`docs/rules/rate-limit.md`](docs/rules/rate-limit.md) |
 | Read-only (explain / locate) | nothing more — go straight to source |
 | Setup / run / env | [`README.md`](README.md) |
 

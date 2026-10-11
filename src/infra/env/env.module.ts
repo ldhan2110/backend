@@ -1,6 +1,7 @@
 import { configCache } from "@config/cache.config";
 import { DatabaseType,configEnv,NodeEnv } from "@config/env.config";
 import { configFile } from "@config/file.config";
+import { configThrottle } from "@config/throttle.config";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { plainToInstance } from "class-transformer";
@@ -79,6 +80,16 @@ export class EnvironmentVariables {
   @Min(1)
   @IsOptional()
   CACHE_DEFAULT_TTL?: number;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  THROTTLE_TTL?: number;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  THROTTLE_LIMIT?: number;
 }
     
 @Module({
@@ -88,7 +99,7 @@ export class EnvironmentVariables {
       expandVariables: true,
       envFilePath: ['.env', '.env.development', '.env.test', '.env.production'],
       cache: true,
-      load: [configEnv, configFile, configCache],
+      load: [configEnv, configFile, configCache, configThrottle],
       validate: (config: Record<string, unknown>) => {
             const validatedConfig = plainToInstance(EnvironmentVariables, config, {
                 enableImplicitConversion: true,

@@ -6,3 +6,4 @@ export { Public, IS_PUBLIC } from './decorators/public.decorator';
 export { CurrentUser } from './decorators/current-user.decorator';
 export { REFRESH_TOKEN_STORE } from './store/refresh-token.store';
 export type { RefreshTokenStore } from './store/refresh-token.store';
+export { Throttle, SkipThrottle, seconds, minutes, hours, days } from '@nestjs/throttler';

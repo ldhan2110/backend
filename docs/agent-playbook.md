@@ -63,7 +63,7 @@ mapper call inside joins the same transaction automatically.
 
 | Layer | Must | Must not |
 |---|---|---|
-| Controller | declare routes, bind `@Query`/`@Body`/`@Param` to request DTOs, delegate to service | hold logic, touch the DB, open a transaction |
+| Controller | declare routes, bind `@Query`/`@Body`/`@Param` to request DTOs, delegate to service, set rate-limit overrides (`@Throttle`/`@SkipThrottle`) | hold logic, touch the DB, open a transaction |
 | Service | business rules, orchestration, throw `DomainException` subclasses, `@Transactional()` on writes | run raw SQL, know about HTTP |
 | Repository | call `SqlMapper`, keep sort/column allow-lists | hold business rules, build SQL by string concat |
 | SQL file | named `-- name:` queries with `#{}` binds | contain `${}` interpolation |
