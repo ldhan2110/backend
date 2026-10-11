@@ -71,7 +71,7 @@ Feature module — this exact shape (model on the existing `user` module):
 src/modules/<name>/
   <name>.module.ts                     declares controller + providers
   controllers/<name>.controller.ts     routes only; ParseIntPipe on :id
-  services/<name>.service.ts           logic; @Transactional() on writes
+  services/<name>.service.ts           logic; @Transactional() on writes; writes return SuccessDto
   repository/<name>.repository.ts      SqlMapper; SORTABLE allow-list
   repository/sql/<name>.sql            -- name: queries; #{} binds only
   dtos/<name>.request.dto.ts           Create + Query DTO; class-validator
@@ -105,6 +105,11 @@ Do not generate tests unless the user asks.
 - **DTOs:** request DTOs validated with `class-validator`, no audit fields
   (clients never send `createdBy`/`updatedBy`). Response DTOs extend `BaseDto`
   (`@common/dtos/base.dto`).
+- **Write responses:** `create` / `update` / `delete` service + controller
+  methods return `SuccessDto` (`@common/dtos/success.dto`, `{ success: true }`),
+  never the raw affected-row count. The mapper write still returns `number`; the
+  service maps it — throw a `DomainException` when a required row was not
+  affected (0 rows), otherwise `return { success: true }`.
 - **Transactions:** wrap the **service** write method with `@Transactional()`
   (`@nestjs-cls/transactional`). Never the controller or repository. No manual
   `QueryRunner`/`DataSource` wiring. Default propagation `REQUIRED` — set a

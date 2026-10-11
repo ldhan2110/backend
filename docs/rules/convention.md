@@ -68,10 +68,12 @@ inside a decorated method joins it automatically — no manual `QueryRunner`,
 
 ```ts
 import { Transactional } from '@nestjs-cls/transactional';
+import { SuccessDto } from '@common/dtos/success.dto';
 
 @Transactional()
-async create(input: CreateUserDto, by: string): Promise<number> {
-  return this.users.create(input, by); // mapper write joins this transaction
+async create(input: CreateUserRequestDto, by: string): Promise<SuccessDto> {
+  await this.users.create(input, by); // mapper write joins this transaction
+  return { success: true };
 }
 ```
 
@@ -80,6 +82,13 @@ async create(input: CreateUserDto, by: string): Promise<number> {
 - Request DTOs: validated with `class-validator`; no audit fields (clients never
   send `createdBy`/`updatedBy`).
 - Response DTOs: extend `BaseDto` (`@common/dtos/base.dto`).
+- **Write responses — CREATE / UPDATE / DELETE return `SuccessDto`**
+  (`@common/dtos/success.dto`, `{ success: true }`), never the raw affected-row
+  count. The mapper still returns `number` (see table above); the service
+  interprets it and returns `SuccessDto`. If a required row was not affected
+  (e.g. update/delete hit 0 rows), throw a `DomainException` (e.g. not-found)
+  instead of reporting success. A CREATE that must hand back the new id returns
+  a response DTO carrying it, not a bare number.
 - Internal projections (a repo-only row shape never serialized to a client, e.g.
   a credential lookup) live in `<name>.response.dto.ts` too, keep a plain `Dto`
   suffix, and do not extend `BaseDto`.

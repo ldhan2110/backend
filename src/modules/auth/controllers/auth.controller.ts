@@ -15,8 +15,7 @@ import { Public, CurrentUser } from '@infra/security';
 import type { AccessPayload } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
 import { LoginResponseDto, UserInfoResponseDto } from '../dtos/auth.response.dto';
-
-export const REFRESH_COOKIE = 'refresh_token';
+import { REFRESH_COOKIE } from '../constants/auth.constants';
 
 function cookieOptions(maxAgeMs: number): CookieOptions {
   return { httpOnly: true, secure: true, sameSite: 'strict', path: '/auth/refresh', maxAge: maxAgeMs };

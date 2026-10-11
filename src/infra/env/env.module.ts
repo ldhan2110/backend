@@ -1,4 +1,5 @@
 import { DatabaseType,configEnv,NodeEnv } from "@config/env.config";
+import { configFile } from "@config/file.config";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { plainToInstance } from "class-transformer";
@@ -55,6 +56,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsOptional()
   REDIS_URL?: string;
+
+  @IsString()
+  UPLOAD_DIR: string = 'uploads';
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  UPLOAD_MAX_SIZE?: number;
+
+  @IsString()
+  @IsOptional()
+  UPLOAD_ALLOWED_MIME?: string;
 }
     
 @Module({
@@ -64,7 +77,7 @@ export class EnvironmentVariables {
       expandVariables: true,
       envFilePath: ['.env', '.env.development', '.env.test', '.env.production'],
       cache: true,
-      load: [configEnv],
+      load: [configEnv, configFile],
       validate: (config: Record<string, unknown>) => {
             const validatedConfig = plainToInstance(EnvironmentVariables, config, {
                 enableImplicitConversion: true,
