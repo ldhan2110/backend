@@ -15,10 +15,10 @@ import { Public, CurrentUser } from '@infra/security';
 import type { AccessPayload } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
 import { LoginResponseDto, UserInfoResponseDto } from '../dtos/auth.response.dto';
-import { REFRESH_COOKIE } from '../constants/auth.constants';
+import { REFRESH_COOKIE, REFRESH_COOKIE_PATH } from '../constants/auth.constants';
 
 function cookieOptions(maxAgeMs: number): CookieOptions {
-  return { httpOnly: true, secure: true, sameSite: 'strict', path: '/auth/refresh', maxAge: maxAgeMs };
+  return { httpOnly: true, secure: true, sameSite: 'strict', path: REFRESH_COOKIE_PATH, maxAge: maxAgeMs };
 }
 
 @Controller({ path: 'auth', version: '1' })
@@ -49,7 +49,7 @@ export class AuthController {
   @HttpCode(204)
   async logout(@CurrentUser() user: AccessPayload, @Res({ passthrough: true }) res: Response): Promise<void> {
     await this.service.logout(user.sub, user.jti);
-    res.clearCookie(REFRESH_COOKIE, { path: '/auth/refresh' });
+    res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
   }
 
   @Get('me')
