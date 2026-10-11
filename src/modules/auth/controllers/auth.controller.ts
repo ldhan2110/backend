@@ -49,7 +49,6 @@ export class AuthController {
   @Post('logout')
   @HttpCode(204)
   async logout(@CurrentUser() user: AccessPayload, @Res({ passthrough: true }) res: Response): Promise<void> {
-    // The access token carries the refresh jti, so logout revokes this exact session.
     await this.service.logout(user.sub, user.jti);
     res.clearCookie(REFRESH_COOKIE, { path: '/auth/refresh' });
   }
@@ -60,7 +59,6 @@ export class AuthController {
   }
 
   private respond(issued: IssuedTokens, res: Response): LoginResponseDto {
-    // Refresh token stays server-side in the httpOnly cookie; only the access token is in the body.
     res.cookie(REFRESH_COOKIE, issued.refresh.token, cookieOptions(issued.refresh.ttlSec * 1000));
     return {
       accessToken: issued.access.token,

@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'node:crypto';
-import { AccessPayload, IssuedAccess, IssuedRefresh, RefreshPayload } from '../types/jwt.type';
+import { AccessPayload, CustomClaims, IssuedAccess, IssuedRefresh, RefreshPayload } from '../types/jwt.type';
 
 const BCRYPT_ROUNDS = 10;
 
@@ -36,8 +36,8 @@ export class TokenService {
     return bcrypt.compare(plain, hash);
   }
 
-  issueAccess(userId: string, jti: string): IssuedAccess {
-    const token = this.jwt.sign({ sub: userId, jti } as AccessPayload, {
+  issueAccess(userId: string, jti: string, claims: CustomClaims = {}): IssuedAccess {
+    const token = this.jwt.sign({ sub: userId, jti, ...claims } as AccessPayload, {
       secret: this.accessSecret,
       expiresIn: this.accessTtl as JwtSignOptions['expiresIn'], // TTL comes from env as a string
     });
@@ -45,9 +45,9 @@ export class TokenService {
     return { token, expiresAt: exp * 1000 };
   }
 
-  issueRefresh(userId: string): IssuedRefresh {
+  issueRefresh(userId: string, claims: CustomClaims = {}): IssuedRefresh {
     const jti = randomUUID();
-    const token = this.jwt.sign({ sub: userId, jti } as RefreshPayload, {
+    const token = this.jwt.sign({ sub: userId, jti, ...claims } as RefreshPayload, {
       secret: this.refreshSecret,
       expiresIn: this.refreshTtl as JwtSignOptions['expiresIn'],
     });

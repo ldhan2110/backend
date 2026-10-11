@@ -1,3 +1,6 @@
+/** Private claims (RFC 7519 §4.3) — any key/value, dev decides. */
+export type CustomClaims = Record<string, unknown>;
+
 export interface AccessPayload {
   sub: string;
   jti: string; // the paired refresh-token jti — lets logout revoke this session without the cookie

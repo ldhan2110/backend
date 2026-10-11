@@ -2,7 +2,7 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { AuthRepository } from '../repository/auth.repository';
 import { TokenService, REFRESH_TOKEN_STORE } from '@infra/security';
-import type { IssuedAccess, IssuedRefresh, RefreshTokenStore } from '@infra/security';
+import type { IssuedAccess, IssuedRefresh, RefreshTokenStore, CustomClaims } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
 import { UserInfoResponseDto } from '../dtos/auth.response.dto';
 import {
@@ -69,8 +69,12 @@ export class AuthService {
   }
 
   private async issue(userId: string): Promise<IssuedTokens> {
-    const refresh = this.tokens.issueRefresh(userId);
-    const access = this.tokens.issueAccess(userId, refresh.jti); // access carries the refresh jti
+    const claims: CustomClaims = {
+      // TODO dev: add claims, e.g. role, department
+      // role: await this.repo.findRole(userId),
+    };
+    const refresh = this.tokens.issueRefresh(userId, claims);
+    const access = this.tokens.issueAccess(userId, refresh.jti, claims); // access carries the refresh jti
     await this.store.save(userId, refresh.jti, this.tokens.sha256(refresh.token), refresh.ttlSec);
     return { access, refresh };
   }
