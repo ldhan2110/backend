@@ -12,7 +12,13 @@ const LEVEL_COLORS: Record<string, string> = {
 };
 const WHITE = '\x1b[37m'; // timestamp
 const INFO = '\x1b[32m'; // caller context + message
+const YELLOW = '\x1b[33m';
 const RESET = '\x1b[0m';
+
+// Per-context color overrides. Default is INFO (green).
+const CONTEXT_COLORS: Record<string, string> = {
+  RoutesResolver: YELLOW,
+};
 
 export function buildFormat(): winston.Logform.Format {
   if (isProd()) {
@@ -30,7 +36,8 @@ export function buildFormat(): winston.Logform.Format {
       const lvl = LEVEL_COLORS[level] ?? '';
       const ts = `${WHITE}[${timestamp}]${RESET}`;
       const tag = `${lvl}[${level.toUpperCase()}]${RESET}`;
-      const rest = `${INFO}[${context ?? 'App'}]: ${message}${RESET}`;
+      const ctxColor = CONTEXT_COLORS[context ?? ''] ?? INFO;
+      const rest = `${ctxColor}[${context ?? 'App'}]: ${message}${RESET}`;
       return `${ts}${tag}${rest}`;
     }),
   );
