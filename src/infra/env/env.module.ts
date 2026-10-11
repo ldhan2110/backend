@@ -1,5 +1,4 @@
-import { DatabaseType } from "@config/env.config";
-import { configEnv, NodeEnv } from "@config/env.config";
+import { DatabaseType,configEnv,NodeEnv } from "@config/env.config";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { plainToInstance } from "class-transformer";

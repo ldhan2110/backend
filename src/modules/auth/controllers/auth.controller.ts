@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response, CookieOptions } from 'express';
 import { AuthService } from '../services/auth.service';
-import type { Issued } from '../services/auth.service';
+import type { IssuedTokens } from '../services/auth.service';
 import { Public, CurrentUser } from '@infra/security';
 import type { AccessPayload } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
@@ -59,12 +59,12 @@ export class AuthController {
     return this.service.me(user.sub);
   }
 
-  private respond(issued: Issued, res: Response): LoginResponseDto {
+  private respond(issued: IssuedTokens, res: Response): LoginResponseDto {
     // Refresh token stays server-side in the httpOnly cookie; only the access token is in the body.
     res.cookie(REFRESH_COOKIE, issued.refresh.token, cookieOptions(issued.refresh.ttlSec * 1000));
     return {
-      accessToken: issued.accessToken,
-      accessTokenExpiresAt: issued.accessTokenExpiresAt,
+      accessToken: issued.access.token,
+      accessTokenExpiresAt: issued.access.expiresAt,
     };
   }
 }

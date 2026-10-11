@@ -4,30 +4,9 @@ import { JwtService } from '@nestjs/jwt';
 import type { JwtSignOptions } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'node:crypto';
+import { AccessPayload, IssuedAccess, IssuedRefresh, RefreshPayload } from '../types/jwt.type';
 
 const BCRYPT_ROUNDS = 10;
-
-/** Fixed hash to compare against for unknown users, so login timing doesn't leak existence. */
-export const DUMMY_BCRYPT_HASH = '$2b$10$sbNp67oXlsP4NhTxKl3JveAs/hYLYXoTIA96XxjYQE7wr8QSFhqsK';
-
-export interface AccessPayload {
-  sub: string;
-  jti: string; // the paired refresh-token jti — lets logout revoke this session without the cookie
-}
-export interface RefreshPayload {
-  sub: string;
-  jti: string;
-}
-export interface IssuedAccess {
-  token: string;
-  expiresAt: number; // epoch ms
-}
-export interface IssuedRefresh {
-  token: string;
-  jti: string;
-  ttlSec: number;
-  expiresAt: number; // epoch ms
-}
 
 @Injectable()
 export class TokenService {

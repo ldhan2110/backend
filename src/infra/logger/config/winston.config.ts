@@ -2,17 +2,17 @@ import * as winston from 'winston';
 
 const isProd = (): boolean => process.env.NODE_ENV?.toLowerCase() === 'production';
 
-// ANSI colors by log level. green=info, yellow=warn, red=error, gray=debug/verbose.
+// ANSI colors for the level token. green=info, yellow=warn, red=error, cyan=debug/verbose.
 const LEVEL_COLORS: Record<string, string> = {
   info: '\x1b[32m',
   warn: '\x1b[33m',
   error: '\x1b[31m',
-  debug: '\x1b[90m',
-  verbose: '\x1b[90m',
+  debug: '\x1b[36m',
+  verbose: '\x1b[36m',
 };
+const WHITE = '\x1b[37m'; // timestamp
+const INFO = '\x1b[32m'; // caller context + message
 const RESET = '\x1b[0m';
-const colorize = (level: string, text: string): string =>
-  `${LEVEL_COLORS[level] ?? ''}${text}${RESET}`;
 
 export function buildFormat(): winston.Logform.Format {
   if (isProd()) {
@@ -27,8 +27,11 @@ export function buildFormat(): winston.Logform.Format {
         context?: string;
         message: string;
       };
-      const line = `[${timestamp}][${level.toUpperCase()}][${context ?? 'App'}]: ${message}`;
-      return colorize(level, line);
+      const lvl = LEVEL_COLORS[level] ?? '';
+      const ts = `${WHITE}[${timestamp}]${RESET}`;
+      const tag = `${lvl}[${level.toUpperCase()}]${RESET}`;
+      const rest = `${INFO}[${context ?? 'App'}]: ${message}${RESET}`;
+      return `${ts}${tag}${rest}`;
     }),
   );
 }

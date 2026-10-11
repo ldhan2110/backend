@@ -37,7 +37,7 @@ export class SqlMapper {
       return { text: sql, params: (params ?? {}) as Record<string, unknown> };
     }
     const built = sql.build();
-    return { text: built.sql, params: { ...built.params, ...(params ?? {}) } };
+    return { text: built.sql, params: { ...built.params, ...params } };
   }
 
   private async query(

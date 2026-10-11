@@ -1,8 +1,8 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Transactional } from '@nestjs-cls/transactional';
 import { AuthRepository } from '../repository/auth.repository';
-import { TokenService, DUMMY_BCRYPT_HASH, REFRESH_TOKEN_STORE } from '@infra/security';
-import type { IssuedRefresh, RefreshTokenStore } from '@infra/security';
+import { TokenService, REFRESH_TOKEN_STORE } from '@infra/security';
+import type { IssuedAccess, IssuedRefresh, RefreshTokenStore } from '@infra/security';
 import { LoginRequestDto, RegisterRequestDto } from '../dtos/auth.request.dto';
 import { UserInfoResponseDto } from '../dtos/auth.response.dto';
 import {
@@ -10,9 +10,8 @@ import {
   UserAlreadyExistsException,
 } from '../exceptions/auth.exception';
 
-export interface Issued {
-  accessToken: string;
-  accessTokenExpiresAt: number;
+export interface IssuedTokens {
+  access: IssuedAccess; // token + expiresAt
   refresh: IssuedRefresh; // token + expiresAt + jti + ttlSec
 }
 
@@ -25,7 +24,7 @@ export class AuthService {
   ) {}
 
   @Transactional()
-  async register(dto: RegisterRequestDto): Promise<Issued> {
+  async register(dto: RegisterRequestDto): Promise<IssuedTokens> {
     if (await this.repo.existsUser(dto.userId)) {
       throw new UserAlreadyExistsException(dto.userId);
     }
@@ -34,10 +33,9 @@ export class AuthService {
     return this.issue(dto.userId);
   }
 
-  async login(dto: LoginRequestDto): Promise<Issued> {
+  async login(dto: LoginRequestDto): Promise<IssuedTokens> {
     const cred = await this.repo.findCredential(dto.userId);
     if (!cred) {
-      await this.tokens.verifyPassword(dto.password, DUMMY_BCRYPT_HASH);
       throw new InvalidCredentialsException();
     }
     const ok = await this.tokens.verifyPassword(dto.password, cred.passwordHash);
@@ -45,7 +43,7 @@ export class AuthService {
     return this.issue(cred.userId);
   }
 
-  async refresh(rawRefreshToken: string): Promise<Issued> {
+  async refresh(rawRefreshToken: string): Promise<IssuedTokens> {
     let payload: { sub: string; jti: string };
     try {
       payload = this.tokens.verifyRefresh(rawRefreshToken);
@@ -70,10 +68,10 @@ export class AuthService {
     return profile;
   }
 
-  private async issue(userId: string): Promise<Issued> {
+  private async issue(userId: string): Promise<IssuedTokens> {
     const refresh = this.tokens.issueRefresh(userId);
     const access = this.tokens.issueAccess(userId, refresh.jti); // access carries the refresh jti
     await this.store.save(userId, refresh.jti, this.tokens.sha256(refresh.token), refresh.ttlSec);
-    return { accessToken: access.token, accessTokenExpiresAt: access.expiresAt, refresh };
+    return { access, refresh };
   }
 }
